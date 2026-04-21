@@ -60,7 +60,7 @@ public sealed class Plugin : IDalamudPlugin
         Framework.Update += OnFrameworkUpdate;
 
         // Tell the UI system that we want our windows to be drawn through the window system
-        PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
+        PluginInterface.UiBuilder.Draw += DrawUi;
 
         // This adds a button to the plugin installer entry of this plugin which allows
         // toggling the display status of the configuration ui
@@ -80,9 +80,13 @@ public sealed class Plugin : IDalamudPlugin
         Framework.Update -= OnFrameworkUpdate;
 
         // Unregister all actions to not leak anything during disposal of plugin
-        PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
+        PluginInterface.UiBuilder.Draw -= DrawUi;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
+
+        ConfigWindow.IsOpen = false;
+        MainWindow.IsOpen = false;
+        TimelineWindow.IsOpen = false;
 
         WindowSystem.RemoveAllWindows();
 
@@ -168,6 +172,12 @@ public sealed class Plugin : IDalamudPlugin
 
         wasInCombat = inCombat;
         countdownWasActive = countdownActive;
+    }
+
+    private void DrawUi()
+    {
+        if (Framework.IsFrameworkUnloading) return;
+        WindowSystem.Draw();
     }
 
     private void OnCommand(string command, string args)

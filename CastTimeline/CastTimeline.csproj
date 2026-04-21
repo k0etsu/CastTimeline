@@ -6,9 +6,4 @@
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <!-- System.Text.Json is needed for FFLogs API JSON deserialization -->
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
-  </ItemGroup>
 </Project>
