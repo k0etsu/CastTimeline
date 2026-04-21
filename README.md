@@ -4,6 +4,8 @@ This plugin displays a scrolling cast timeline overlay, synchronized in real tim
 
 Import a rotation from [FFLogs](https://www.fflogs.com/) or a CSV file, then watch the timeline scroll automatically as the fight progresses so you always know what to press next.
 
+<img width="480" height="145" alt="v68xqqL9LD" src="https://github.com/user-attachments/assets/cc242b78-6cc4-4b1e-b37d-45d96fcaee81" />
+
 ---
 
 ## Installation
