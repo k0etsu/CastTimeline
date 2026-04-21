@@ -43,6 +43,13 @@ public partial class MainWindow : Window, IDisposable
         if (ImGui.Button("Import CSV"))
             ImGui.OpenPopup("CSV Import");
 
+        ImGui.SameLine();
+
+        if (!plugin.TimelineWindow.IsReplaying) ImGui.BeginDisabled();
+        if (ImGui.Button("Reset Replay"))
+            plugin.TimelineWindow.StopReplay();
+        if (!plugin.TimelineWindow.IsReplaying) ImGui.EndDisabled();
+
         DrawImportPopup();
         DrawCsvImportPopup();
 

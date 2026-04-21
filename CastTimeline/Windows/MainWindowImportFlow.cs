@@ -420,10 +420,17 @@ public partial class MainWindow
     private string csvPlayerName = "Player";
     private string csvImportStatus = string.Empty;
 
+    private string fileBrowserCurrentDir = string.Empty;
+    private string fileBrowserSelectedEntry = string.Empty;
+    private List<(string Path, string Name, bool IsDir)> fileBrowserEntries = new();
+    private bool fileBrowserNeedsRefresh = true;
+
     private void DrawCsvImportPopup()
     {
         if (!ImGui.BeginPopup("CSV Import"))
             return;
+
+        DrawFileBrowserModal();
 
         ImGui.Text("Import from CSV File");
         ImGui.Separator();
@@ -431,8 +438,21 @@ public partial class MainWindow
         ImGui.Spacing();
 
         ImGui.Text("File path:");
-        ImGui.SetNextItemWidth(400);
+        ImGui.SetNextItemWidth(340);
         ImGui.InputTextWithHint("##csv_path", "C:\\path\\to\\timeline.csv", ref csvFilePath, 512);
+        ImGui.SameLine();
+        if (ImGui.Button("Browse..."))
+        {
+            var startDir = string.Empty;
+            if (!string.IsNullOrEmpty(csvFilePath))
+                startDir = Path.GetDirectoryName(csvFilePath) ?? string.Empty;
+            if (!Directory.Exists(startDir))
+                startDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            fileBrowserCurrentDir = startDir;
+            fileBrowserSelectedEntry = string.Empty;
+            fileBrowserNeedsRefresh = true;
+            ImGui.OpenPopup("##csv_browser");
+        }
 
         ImGui.Spacing();
         ImGui.Text("Player name (shown in tooltip):");
@@ -563,10 +583,13 @@ public partial class MainWindow
             // CSV isGCD=1 means GCD spell/weaponskill → AbilityType "0" (anything not "1").
             var abilityType = isGcd == 0 ? "1" : "0";
 
-            // Negative timestamps are precast (before pull). Clamping to 0 ms is correct
-            // because the replay lead-in will display them approaching from the right
-            // during countdown and crossing the playhead at t=0.
-            var timestampMs = (uint)Math.Max(0.0, timeSec * 1000.0);
+            // Negative time = prepull cast that started before the pull. The renderer
+            // expects Timestamp to be the cast completion time for IsPrecast entries,
+            // with the icon shifted left by CastTime during drawing.
+            bool isPrecast = timeSec < 0 && castTime > 0;
+            uint timestampMs = isPrecast
+                ? (uint)Math.Max(0.0, (timeSec + castTime) * 1000.0)
+                : (uint)(timeSec * 1000.0);
 
             entries.Add(new CastLogEntry
             {
@@ -578,11 +601,92 @@ public partial class MainWindow
                 SourceJobId      = 0,
                 CastTime         = castTime,
                 IsInstant        = castTime == 0,
+                IsPrecast        = isPrecast,
                 CachedTrailColor = CastTimeline.Utilities.JobUtilities.GetJobTrailColor(0),
             });
         }
 
         return (entries, null);
+    }
+
+    private void DrawFileBrowserModal()
+    {
+        ImGui.SetNextWindowSize(new Vector2(600, 420), ImGuiCond.Appearing);
+        if (!ImGui.BeginPopupModal("##csv_browser", ImGuiWindowFlags.NoTitleBar))
+            return;
+
+        if (fileBrowserNeedsRefresh)
+        {
+            fileBrowserEntries.Clear();
+            try
+            {
+                foreach (var dir in Directory.GetDirectories(fileBrowserCurrentDir).OrderBy(d => d))
+                    fileBrowserEntries.Add((dir, Path.GetFileName(dir), true));
+                foreach (var file in Directory.GetFiles(fileBrowserCurrentDir, "*.csv").OrderBy(f => f))
+                    fileBrowserEntries.Add((file, Path.GetFileName(file), false));
+            }
+            catch { }
+            fileBrowserNeedsRefresh = false;
+        }
+
+        // Path bar
+        var parent = Directory.GetParent(fileBrowserCurrentDir)?.FullName;
+        if (ImGui.Button("Up") && parent != null)
+        {
+            fileBrowserCurrentDir = parent;
+            fileBrowserSelectedEntry = string.Empty;
+            fileBrowserNeedsRefresh = true;
+        }
+        ImGui.SameLine();
+        ImGui.TextUnformatted(fileBrowserCurrentDir);
+
+        ImGui.Separator();
+
+        // File listing
+        var footerHeight = ImGui.GetFrameHeightWithSpacing() + ImGui.GetStyle().ItemSpacing.Y + ImGui.GetFrameHeight() + 8;
+        if (ImGui.BeginChild("##browser_list", new Vector2(0, -footerHeight), true))
+        {
+            foreach (var (path, name, isDir) in fileBrowserEntries)
+            {
+                bool isSelected = fileBrowserSelectedEntry == path;
+                if (isDir)
+                    ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.4f, 0.8f, 1.0f, 1.0f));
+
+                if (ImGui.Selectable(isDir ? $"[+] {name}" : name, isSelected, ImGuiSelectableFlags.AllowDoubleClick))
+                {
+                    fileBrowserSelectedEntry = path;
+                    if (isDir && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                    {
+                        fileBrowserCurrentDir = path;
+                        fileBrowserSelectedEntry = string.Empty;
+                        fileBrowserNeedsRefresh = true;
+                    }
+                }
+
+                if (isDir)
+                    ImGui.PopStyleColor();
+            }
+        }
+        ImGui.EndChild();
+
+        // Selected file name display
+        bool isFileSelected = !string.IsNullOrEmpty(fileBrowserSelectedEntry)
+            && fileBrowserEntries.Any(e => e.Path == fileBrowserSelectedEntry && !e.IsDir);
+        ImGui.Text(isFileSelected ? $"File: {Path.GetFileName(fileBrowserSelectedEntry)}" : "No file selected");
+
+        if (!isFileSelected) ImGui.BeginDisabled();
+        if (ImGui.Button("Select"))
+        {
+            csvFilePath = fileBrowserSelectedEntry;
+            ImGui.CloseCurrentPopup();
+        }
+        if (!isFileSelected) ImGui.EndDisabled();
+
+        ImGui.SameLine();
+        if (ImGui.Button("Cancel##browser"))
+            ImGui.CloseCurrentPopup();
+
+        ImGui.EndPopup();
     }
 
     // Built once on the first CSV import that needs a name→ID reverse lookup.

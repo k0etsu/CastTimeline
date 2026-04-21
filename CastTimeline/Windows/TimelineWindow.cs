@@ -82,6 +82,8 @@ public class TimelineWindow : Window, IDisposable
     // Caches CalcTextSize results for ability-type label strings (tiny set: "0", "1", etc.).
     private static readonly Dictionary<string, Vector2> AbilityTypeSizeCache = new();
 
+    public bool IsReplaying => isReplaying;
+
     public void StartReplay()
     {
         isReplaying = true;
@@ -578,33 +580,38 @@ public class TimelineWindow : Window, IDisposable
     // Called only at import/selection time (SetPlayerCastData), never per frame.
     private uint GetAbilityIconId(uint abilityId, string abilityName)
     {
-        // AbilityId=0 is the sentinel for "unknown" (e.g. CSV entries with string names that
-        // could not be resolved to a game ID). Row 0 of the Action sheet is a placeholder with
-        // a generic icon — don't look it up, just fall through to the colored-rectangle fallback.
-        if (abilityId == 0) return 0;
-
         uint iconId = 0;
-        try
+
+        // AbilityId=0 means unresolved — skip the Action sheet (row 0 is a placeholder).
+        if (abilityId > 0)
         {
-            // Use the Experimental sheet: it tracks the "latest" EXDSchema branch, which stays
-            // current with game patches. The stable Action sheet is pinned to a fixed schema
-            // version and can fall behind after content patches, causing Icon to read from the
-            // wrong column offset and return 0 for valid abilities.
+            try
+            {
+                // Use the Experimental sheet: it tracks the "latest" EXDSchema branch, which stays
+                // current with game patches. The stable Action sheet is pinned to a fixed schema
+                // version and can fall behind after content patches, causing Icon to read from the
+                // wrong column offset and return 0 for valid abilities.
 #pragma warning disable PendingExcelSchema
-            var sheet = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Experimental.Action>();
-            if (sheet != null && sheet.HasRow(abilityId))
-                iconId = sheet.GetRow(abilityId).Icon;
+                var sheet = Plugin.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Experimental.Action>();
+                if (sheet != null && sheet.HasRow(abilityId))
+                    iconId = sheet.GetRow(abilityId).Icon;
 #pragma warning restore PendingExcelSchema
-        }
-        catch (Exception ex)
-        {
-            Plugin.Log.Debug($"Icon lookup failed for ability {abilityId}: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.Debug($"Icon lookup failed for ability {abilityId}: {ex.Message}");
+            }
         }
 
         // Potions/tinctures are items, not actions — their IDs don't map to the Action sheet.
-        // Fall back to a name-based lookup against the Item sheet.
+        // "Tincture" is the generic CSV label; resolve it to a specific item for icon lookup.
         if (iconId == 0 && !string.IsNullOrEmpty(abilityName))
-            iconId = GetItemIconIdByName(abilityName);
+        {
+            var itemName = abilityName.Equals("Tincture", StringComparison.OrdinalIgnoreCase)
+                ? "Grade 4 Tincture of Intelligence"
+                : abilityName;
+            iconId = GetItemIconIdByName(itemName);
+        }
 
         return iconId;
     }
