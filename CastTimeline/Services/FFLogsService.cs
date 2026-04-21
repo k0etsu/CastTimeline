@@ -76,8 +76,6 @@ public class FFLogsService
         var config = pluginInterface.GetPluginConfig() as Configuration;
         if (config == null) return null;
 
-        using var client = new HttpClient();
-
         var form = new Dictionary<string, string>
         {
             { "grant_type", "client_credentials" },
@@ -89,7 +87,7 @@ public class FFLogsService
 
         try
         {
-            var tokenResponse = await client.PostAsync(FFLogsTokenUrl, new FormUrlEncodedContent(form));
+            var tokenResponse = await this.httpClient.PostAsync(FFLogsTokenUrl, new FormUrlEncodedContent(form));
             LastTokenStatusCode = tokenResponse.StatusCode;
 
             if (tokenResponse.IsSuccessStatusCode)
