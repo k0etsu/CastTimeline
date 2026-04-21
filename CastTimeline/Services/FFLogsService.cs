@@ -157,14 +157,18 @@ public class FFLogsService
             var report = reportData.Data.ReportData.Report;
             var fightInfos = new List<FightInfo>();
 
+            var playerById = report.MasterData?.Players
+                ?.ToDictionary(p => p.Id, p => p)
+                ?? new Dictionary<int, FFLogsV2Player>();
+
             foreach (var fight in report.Fights)
             {
                 var fightPlayers = new List<PlayerInfo>();
-                if (fight.FriendlyPlayers != null && report.MasterData?.Players != null)
+                if (fight.FriendlyPlayers != null)
                 {
                     foreach (var playerId in fight.FriendlyPlayers)
                     {
-                        var masterPlayer = report.MasterData.Players.FirstOrDefault(p => p.Id == playerId);
+                        playerById.TryGetValue(playerId, out var masterPlayer);
                         if (masterPlayer != null)
                         {
                             if (masterPlayer.Server != null)
