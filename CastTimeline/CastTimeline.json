@@ -2,11 +2,11 @@
   "Author": "k0etsu",
   "Name": "CastTimeline",
   "Punchline": "A timeline viewer for FFXIV casts.",
-  "Description": "Imports FFXIV cast logs and displays them in a timeline view. /timeline",
+  "Description": "Import cast logs and display them in a timeline view. /timeline",
   "ApplicableVersion": "any",
+  "RepoUrl": "https://github.com/k0etsu/CastTimeline",
   "Tags": [
     "timeline",
-    "casts",
-    "ffxiv"
+    "casts"
   ]
 }
