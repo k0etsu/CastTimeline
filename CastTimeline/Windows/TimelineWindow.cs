@@ -65,6 +65,11 @@ public class TimelineWindow : Window, IDisposable
     private Vector3 cachedTrailColorInput;
     private uint    cachedCustomTrailColorU32;
 
+    // Cached ruler labels — rebuilt only when fight duration or ruler interval changes.
+    private Dictionary<long, string> cachedRulerLabels         = new();
+    private uint cachedRulerLabelMaxTimestamp                   = uint.MaxValue;
+    private int  cachedRulerLabelIntervalSeconds                = -1;
+
     // Lead-in prepended to content during replay so that t=0 icons approach from the right
     // during the countdown window instead of being flush with the left edge.
     // 10 seconds covers the maximum /countdown value in FFXIV.
@@ -419,7 +424,7 @@ public class TimelineWindow : Window, IDisposable
             }
 
             if (settings.ShowRuler)
-                DrawTimelineRuler(cachedMaxTimestamp, totalWidth, leadInMs);
+                DrawTimelineRuler(cachedMaxTimestamp, totalWidth, leadInMs, childPos.X, childPos.X + availWidth);
 
             var drawList = ImGui.GetWindowDrawList();
             var rowTop = ImGui.GetCursorScreenPos();
@@ -472,35 +477,52 @@ public class TimelineWindow : Window, IDisposable
 
     }
 
-    private void DrawTimelineRuler(uint maxTimestamp, float totalWidth, float leadInMs)
+    private void RebuildRulerLabels(uint maxTimestamp, int intervalSeconds)
+    {
+        cachedRulerLabels.Clear();
+        foreach (var negTime in PreStartMarkersMs)
+            cachedRulerLabels[negTime] = "-" + TimeSpan.FromMilliseconds(-negTime).ToString(@"mm\:ss");
+        var stepMs = (long)(Math.Max(1, intervalSeconds) * 1000);
+        for (long t = 0; t <= maxTimestamp; t += stepMs)
+            cachedRulerLabels[t] = TimeSpan.FromMilliseconds(t).ToString(@"mm\:ss");
+        cachedRulerLabelMaxTimestamp    = maxTimestamp;
+        cachedRulerLabelIntervalSeconds = intervalSeconds;
+    }
+
+    private void DrawTimelineRuler(uint maxTimestamp, float totalWidth, float leadInMs, float cullLeft, float cullRight)
     {
         var settings = plugin.Configuration.TimelineWindow;
+
+        if (maxTimestamp != cachedRulerLabelMaxTimestamp ||
+            settings.RulerIntervalSeconds != cachedRulerLabelIntervalSeconds)
+            RebuildRulerLabels(maxTimestamp, settings.RulerIntervalSeconds);
+
         var drawList = ImGui.GetWindowDrawList();
-        var origin = ImGui.GetCursorScreenPos();
-        var scale = settings.TimelineScale;
+        var origin   = ImGui.GetCursorScreenPos();
+        var scale    = settings.TimelineScale;
 
         drawList.AddRectFilled(origin, origin + new Vector2(totalWidth, RulerHeight), RulerBgColor);
 
         var timeStepMs = (long)(Math.Max(1, settings.RulerIntervalSeconds) * 1000);
-        var tickColor = ImGui.GetColorU32(ImGuiCol.Text);
+        var tickColor  = ImGui.GetColorU32(ImGuiCol.Text);
 
         // Fixed pre-start markers — only drawn when the lead-in extends far enough to include them.
         foreach (var negTime in PreStartMarkersMs)
         {
             if (-negTime >= (long)leadInMs) continue;
             var x = origin.X + ((negTime + leadInMs) * scale / 10f);
-            var label = "-" + TimeSpan.FromMilliseconds(-negTime).ToString(@"mm\:ss");
+            if (x < cullLeft - 50f || x > cullRight + 50f) continue;
             drawList.AddLine(new Vector2(x, origin.Y), new Vector2(x, origin.Y + RulerHeight), tickColor);
-            drawList.AddText(new Vector2(x + 2, origin.Y + 2), tickColor, label);
+            drawList.AddText(new Vector2(x + 2, origin.Y + 2), tickColor, cachedRulerLabels[negTime]);
         }
 
         // Positive-time markings from t=0 to end of fight.
         for (long time = 0; time <= maxTimestamp; time += timeStepMs)
         {
             var x = origin.X + ((time + leadInMs) * scale / 10f);
-            var label = TimeSpan.FromMilliseconds(time).ToString(@"mm\:ss");
+            if (x < cullLeft - 50f || x > cullRight + 50f) continue;
             drawList.AddLine(new Vector2(x, origin.Y), new Vector2(x, origin.Y + RulerHeight), tickColor);
-            drawList.AddText(new Vector2(x + 2, origin.Y + 2), tickColor, label);
+            drawList.AddText(new Vector2(x + 2, origin.Y + 2), tickColor, cachedRulerLabels[time]);
         }
 
         ImGui.Dummy(new Vector2(totalWidth, RulerHeight));
