@@ -66,6 +66,10 @@ public class CastLogEntry
     // True when this is the first cast of the fight and the cast began before logging started.
     // The Timestamp marks the cast completion; the trail renders leftward by CastTime.
     public bool IsPrecast { get; set; } = false;
+    // False when AbilityType == "1" (oGCD ability/item). Stored as bool so DrawCastEvent
+    // avoids a string comparison per entry per frame. Defaults to true; old saves are
+    // backfilled in SetPlayerCastData from the stored AbilityType string.
+    public bool IsGcd { get; set; } = true;
     // Pre-packed ImGui trail color (job color at 0.6f alpha). Set at import time so
     // DrawCastEvent never calls GetJobColorVec4 per frame. Zero means unset (old saves).
     public uint CachedTrailColor { get; set; }

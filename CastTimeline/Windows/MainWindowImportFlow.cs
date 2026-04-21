@@ -602,6 +602,7 @@ public partial class MainWindow
                 CastTime         = castTime,
                 IsInstant        = castTime == 0,
                 IsPrecast        = isPrecast,
+                IsGcd            = isGcd != 0,
                 CachedTrailColor = CastTimeline.Utilities.JobUtilities.GetJobTrailColor(0),
             });
         }

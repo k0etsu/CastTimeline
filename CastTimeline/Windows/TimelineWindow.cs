@@ -528,9 +528,6 @@ public class TimelineWindow : Window, IDisposable
         ImGui.Dummy(new Vector2(totalWidth, RulerHeight));
     }
 
-    // Type "1" (ability/item) goes in the upper lane at reduced size; everything else is a GCD.
-    private static bool IsGcd(string abilityType) => abilityType != "1";
-
     private void DrawCastEvent(CastLogEntry log, ImDrawListPtr drawList, Vector2 rowTop, float lanePadding, float leadInMs, in DrawParams dp)
     {
         // For precast events, Timestamp is the cast completion. Shift the icon left to the
@@ -540,7 +537,7 @@ public class TimelineWindow : Window, IDisposable
 
         // GCDs sit in the lower lane; oGCDs/abilities in the upper lane at reduced size.
         var gcdY = rowTop.Y + dp.OGcdSize + lanePadding;
-        bool isGcd = IsGcd(log.AbilityType);
+        bool isGcd = log.IsGcd;
         var drawSize = isGcd ? dp.IconSize : dp.OGcdSize;
         var drawY = isGcd ? gcdY : rowTop.Y;
 
@@ -767,12 +764,14 @@ public class TimelineWindow : Window, IDisposable
             RebuildTimestampCache(playerCastData.CastLogs);
 
             // Populate per-entry caches. Also backfills entries deserialized from old saves
-            // where CachedTrailColor/CachedIconId are zero.
+            // where CachedTrailColor/CachedIconId/IsGcd are unset.
             foreach (var log in playerCastData.CastLogs)
             {
                 log.CachedIconId = GetAbilityIconId(log.AbilityId, log.AbilityName);
                 if (log.CachedTrailColor == 0)
                     log.CachedTrailColor = JobUtilities.GetJobTrailColor(log.SourceJobId);
+                // Old saves default IsGcd = true; re-derive from AbilityType for oGCD entries.
+                if (log.AbilityType == "1") log.IsGcd = false;
 
                 if (log.CachedIconId > 0 && !IconTextureCache.ContainsKey(log.CachedIconId))
                     IconTextureCache[log.CachedIconId] =

@@ -463,6 +463,7 @@ public class FFLogsService
             SourceJobId = jobId,
             CastTime = castTime,
             IsInstant = isInstant,
+            IsGcd = abilityType != "1",
             CachedTrailColor = JobUtilities.GetJobTrailColor(jobId)
         };
     }
