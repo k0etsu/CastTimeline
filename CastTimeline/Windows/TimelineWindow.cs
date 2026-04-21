@@ -84,7 +84,8 @@ public class TimelineWindow : Window, IDisposable
     private static readonly Dictionary<uint, ISharedImmediateTexture> IconTextureCache = new();
 
     // Pre-packed colours used every draw frame — computed once at class load.
-    private static readonly uint LabelBgColor = ImGui.GetColorU32(new Vector4(0, 0, 0, 0.65f));
+    private static readonly uint LabelBgColor   = ImGui.GetColorU32(new Vector4(0, 0, 0, 0.65f));
+    private static readonly uint LabelTextColor = ImGui.GetColorU32(new Vector4(1, 1, 1, 1));
 
     // Caches CalcTextSize results for ability-type label strings (tiny set: "0", "1", etc.).
     private static readonly Dictionary<string, Vector2> AbilityTypeSizeCache = new();
@@ -572,7 +573,7 @@ public class TimelineWindow : Window, IDisposable
                 labelPos,
                 new Vector2(x + labelSize.X + 2, labelY + fontSize),
                 LabelBgColor);
-            drawList.AddText(labelPos, ImGui.GetColorU32(new Vector4(1, 1, 1, 1)), log.AbilityType);
+            drawList.AddText(labelPos, LabelTextColor, log.AbilityType);
         }
 
         // Tooltip — hit area spans the full cast time width (icon + trail)
