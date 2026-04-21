@@ -76,6 +76,9 @@ public class TimelineWindow : Window, IDisposable
     // Built once on the first potion/item lookup; null until then.
     private static Dictionary<string, uint>? ItemIconByName;
 
+    // Populated at SetPlayerCastData time so DrawCastEvent never calls GetFromGameIcon per frame.
+    private static readonly Dictionary<uint, ISharedImmediateTexture> IconTextureCache = new();
+
     // Pre-packed colours used every draw frame — computed once at class load.
     private static readonly uint LabelBgColor = ImGui.GetColorU32(new Vector4(0, 0, 0, 0.65f));
 
@@ -531,20 +534,20 @@ public class TimelineWindow : Window, IDisposable
             }
         }
 
-        // Ability icon, falling back to a job-colored rectangle
-        if (log.CachedIconId > 0)
+        // Ability icon, falling back to a job-colored rectangle.
+        // IconTextureCache is populated at import time so no per-frame GetFromGameIcon call is needed.
+        var jobRect = true;
+        if (log.CachedIconId > 0 && IconTextureCache.TryGetValue(log.CachedIconId, out var tex))
         {
-            var tex = Plugin.TextureProvider.GetFromGameIcon(new GameIconLookup(log.CachedIconId));
             var wrap = tex.GetWrapOrEmpty();
             if (wrap.Handle != nint.Zero)
+            {
                 drawList.AddImage(wrap.Handle, iconMin, iconMax);
-            else
-                drawList.AddRectFilled(iconMin, iconMax, JobUtilities.GetJobColor(log.SourceJobId));
+                jobRect = false;
+            }
         }
-        else
-        {
+        if (jobRect)
             drawList.AddRectFilled(iconMin, iconMax, JobUtilities.GetJobColor(log.SourceJobId));
-        }
 
         // Ability type label overlaid at the bottom of the icon
         if (!string.IsNullOrEmpty(log.AbilityType))
@@ -739,6 +742,10 @@ public class TimelineWindow : Window, IDisposable
                 log.CachedIconId = GetAbilityIconId(log.AbilityId, log.AbilityName);
                 if (log.CachedTrailColor == 0)
                     log.CachedTrailColor = JobUtilities.GetJobTrailColor(log.SourceJobId);
+
+                if (log.CachedIconId > 0 && !IconTextureCache.ContainsKey(log.CachedIconId))
+                    IconTextureCache[log.CachedIconId] =
+                        Plugin.TextureProvider.GetFromGameIcon(new GameIconLookup(log.CachedIconId));
             }
         }
         else
