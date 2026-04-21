@@ -20,9 +20,10 @@ internal readonly struct DrawParams
     // Pre-packed custom trail colour (used only when UseCustomTrailColor is true).
     public readonly uint    CustomTrailColor;
     public readonly bool    ShowIconLabels;
+    public readonly bool    WindowHovered;
     public readonly Vector2 MousePos;
 
-    public DrawParams(float scale, float iconSize, float oGcdSize, bool useCustomTrailColor, uint customTrailColor, bool showIconLabels, Vector2 mousePos)
+    public DrawParams(float scale, float iconSize, float oGcdSize, bool useCustomTrailColor, uint customTrailColor, bool showIconLabels, bool windowHovered, Vector2 mousePos)
     {
         Scale               = scale;
         IconSize            = iconSize;
@@ -30,6 +31,7 @@ internal readonly struct DrawParams
         UseCustomTrailColor = useCustomTrailColor;
         CustomTrailColor    = customTrailColor;
         ShowIconLabels      = showIconLabels;
+        WindowHovered       = windowHovered;
         MousePos            = mousePos;
     }
 }
@@ -371,14 +373,6 @@ public class TimelineWindow : Window, IDisposable
             cachedTrailColorInput     = trailVec;
             cachedCustomTrailColorU32 = ImGui.GetColorU32(new Vector4(trailVec.X, trailVec.Y, trailVec.Z, 0.6f));
         }
-        var dp = new DrawParams(
-            scale,
-            iconSize,
-            oGcdSize,
-            settings.UseCustomTrailColor,
-            cachedCustomTrailColorU32,
-            settings.ShowIconLabels,
-            ImGui.GetMousePos());
 
         // During replay use the full 10 s countdown lead-in.
         // Otherwise derive the lead-in from the cached earliest effective start so that it
@@ -428,6 +422,16 @@ public class TimelineWindow : Window, IDisposable
 
             if (settings.ShowRuler)
                 DrawTimelineRuler(cachedMaxTimestamp, totalWidth, leadInMs, childPos.X, childPos.X + availWidth);
+
+            var dp = new DrawParams(
+                scale,
+                iconSize,
+                oGcdSize,
+                settings.UseCustomTrailColor,
+                cachedCustomTrailColorU32,
+                settings.ShowIconLabels,
+                ImGui.IsWindowHovered(),
+                ImGui.GetMousePos());
 
             var drawList = ImGui.GetWindowDrawList();
             var rowTop = ImGui.GetCursorScreenPos();
@@ -598,11 +602,14 @@ public class TimelineWindow : Window, IDisposable
             drawList.AddText(labelPos, LabelTextColor, log.AbilityType);
         }
 
-        // Tooltip — hit area spans the full cast time width (icon + trail)
+        // Tooltip — hit area spans the full cast time width (icon + trail).
+        // WindowHovered is checked first (one bool read) to skip float maths when the
+        // mouse is outside the timeline child window entirely.
         var totalCastWidthPx = !log.IsInstant && log.CastTime > 0
             ? Math.Max(drawSize, (float)(log.CastTime * dp.Scale * 100f))
             : drawSize;
-        if (dp.MousePos.X >= x && dp.MousePos.X <= x + totalCastWidthPx &&
+        if (dp.WindowHovered &&
+            dp.MousePos.X >= x && dp.MousePos.X <= x + totalCastWidthPx &&
             dp.MousePos.Y >= drawY && dp.MousePos.Y <= drawY + drawSize)
         {
             var typeLabel = isGcd ? "GCD" : "Ability";
