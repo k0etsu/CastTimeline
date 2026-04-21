@@ -190,6 +190,18 @@ public class ConfigWindow : Window, IDisposable
 
         ImGui.Spacing();
 
+        // Icon label settings
+        ImGui.Text("Icon Labels:");
+
+        var showLabels = timelineSettings.ShowIconLabels;
+        if (ImGui.Checkbox("Show ability type labels on icons", ref showLabels))
+        {
+            timelineSettings.ShowIconLabels = showLabels;
+            configuration.Save();
+        }
+
+        ImGui.Spacing();
+
         // Cast trail color
         ImGui.Text("Cast Trail Color:");
 

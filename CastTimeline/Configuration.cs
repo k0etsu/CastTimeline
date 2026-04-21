@@ -39,6 +39,7 @@ public class TimelineWindowSettings
     public float IconScale { get; set; } = 2.0f;
     public bool ShowRuler { get; set; } = true;
     public int RulerIntervalSeconds { get; set; } = 10;
+    public bool ShowIconLabels { get; set; } = true;
     public bool UseCustomTrailColor { get; set; } = false;
     // RGB only — alpha is always fixed at 0.6 in the renderer.
     public Vector3 TrailColor { get; set; } = new(1f, 1f, 1f);

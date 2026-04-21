@@ -19,15 +19,17 @@ internal readonly struct DrawParams
     public readonly bool    UseCustomTrailColor;
     // Pre-packed custom trail colour (used only when UseCustomTrailColor is true).
     public readonly uint    CustomTrailColor;
+    public readonly bool    ShowIconLabels;
     public readonly Vector2 MousePos;
 
-    public DrawParams(float scale, float iconSize, float oGcdSize, bool useCustomTrailColor, uint customTrailColor, Vector2 mousePos)
+    public DrawParams(float scale, float iconSize, float oGcdSize, bool useCustomTrailColor, uint customTrailColor, bool showIconLabels, Vector2 mousePos)
     {
         Scale               = scale;
         IconSize            = iconSize;
         OGcdSize            = oGcdSize;
         UseCustomTrailColor = useCustomTrailColor;
         CustomTrailColor    = customTrailColor;
+        ShowIconLabels      = showIconLabels;
         MousePos            = mousePos;
     }
 }
@@ -375,6 +377,7 @@ public class TimelineWindow : Window, IDisposable
             oGcdSize,
             settings.UseCustomTrailColor,
             cachedCustomTrailColorU32,
+            settings.ShowIconLabels,
             ImGui.GetMousePos());
 
         // During replay use the full 10 s countdown lead-in.
@@ -578,7 +581,7 @@ public class TimelineWindow : Window, IDisposable
             drawList.AddRectFilled(iconMin, iconMax, JobUtilities.GetJobColor(log.SourceJobId));
 
         // Ability type label overlaid at the bottom of the icon
-        if (!string.IsNullOrEmpty(log.AbilityType))
+        if (dp.ShowIconLabels && !string.IsNullOrEmpty(log.AbilityType))
         {
             var fontSize = ImGui.GetFontSize();
             var labelY = drawY + drawSize - fontSize;
