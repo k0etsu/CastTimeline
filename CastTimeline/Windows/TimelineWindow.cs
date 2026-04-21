@@ -86,6 +86,8 @@ public class TimelineWindow : Window, IDisposable
     // Pre-packed colours used every draw frame — computed once at class load.
     private static readonly uint LabelBgColor   = ImGui.GetColorU32(new Vector4(0, 0, 0, 0.65f));
     private static readonly uint LabelTextColor = ImGui.GetColorU32(new Vector4(1, 1, 1, 1));
+    private static readonly uint PlayheadColor  = ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.9f));
+    private static readonly uint RulerBgColor   = ImGui.GetColorU32(new Vector4(0f, 0f, 0f, 0.3f));
 
     // Caches CalcTextSize results for ability-type label strings (tiny set: "0", "1", etc.).
     private static readonly Dictionary<string, Vector2> AbilityTypeSizeCache = new();
@@ -460,14 +462,12 @@ public class TimelineWindow : Window, IDisposable
             var lineX = childPos.X + playheadOffset;
             var lineTop = childPos.Y;
             var lineBottom = childPos.Y + contentHeight;
-            var lineColor = ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 0.9f));
-
-            parentDrawList.AddLine(new Vector2(lineX, lineTop), new Vector2(lineX, lineBottom), lineColor, 2f);
+            parentDrawList.AddLine(new Vector2(lineX, lineTop), new Vector2(lineX, lineBottom), PlayheadColor, 2f);
             parentDrawList.AddTriangleFilled(
                 new Vector2(lineX - 5f, lineTop),
                 new Vector2(lineX + 5f, lineTop),
                 new Vector2(lineX, lineTop + 8f),
-                lineColor);
+                PlayheadColor);
         }
 
     }
@@ -479,7 +479,7 @@ public class TimelineWindow : Window, IDisposable
         var origin = ImGui.GetCursorScreenPos();
         var scale = settings.TimelineScale;
 
-        drawList.AddRectFilled(origin, origin + new Vector2(totalWidth, RulerHeight), ImGui.GetColorU32(new Vector4(0, 0, 0, 0.3f)));
+        drawList.AddRectFilled(origin, origin + new Vector2(totalWidth, RulerHeight), RulerBgColor);
 
         var timeStepMs = (long)(Math.Max(1, settings.RulerIntervalSeconds) * 1000);
         var tickColor = ImGui.GetColorU32(ImGuiCol.Text);
