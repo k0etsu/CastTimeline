@@ -1,0 +1,12 @@
+{
+  "Author": "k0etsu",
+  "Name": "CastTimeline",
+  "Punchline": "A timeline viewer for FFXIV casts.",
+  "Description": "Imports FFXIV cast logs and displays them in a timeline view. /timeline",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "timeline",
+    "casts",
+    "ffxiv"
+  ]
+}

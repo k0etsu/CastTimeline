@@ -1,0 +1,20 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: k0etsu/DalamudPlugins/.github/workflows/reusable_create_release.yml@master
+    with:
+      internal_name: CastTimeline
+      solution_name: CastTimeline
+      build_configuration: Release
+      personal_plugin_repo: k0etsu/DalamudPlugins
+      personal_plugin_repo_branch: master
+    secrets: inherit

@@ -2,10 +2,16 @@
 <Project Sdk="Dalamud.NET.Sdk/14.0.2">
   <PropertyGroup>
     <Version>0.0.0.1</Version>
-    <PackageProjectUrl>https://github.com/goatcorp/SamplePlugin</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/k0etsu/CastTimeline</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
+    <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- System.Text.Json is needed for FFLogs API JSON deserialization -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="..\Data\goat.png">
