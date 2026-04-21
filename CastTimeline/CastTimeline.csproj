@@ -6,17 +6,11 @@
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <AppendPlatformToOutputPath>false</AppendPlatformToOutputPath>
+    <OutputPath>../bin/$(Configuration)/$(MSBuildProjectName)/</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- System.Text.Json is needed for FFLogs API JSON deserialization -->
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="..\Data\goat.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-    </Content>
   </ItemGroup>
 </Project>
