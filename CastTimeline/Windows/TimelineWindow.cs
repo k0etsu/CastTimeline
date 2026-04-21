@@ -61,6 +61,10 @@ public class TimelineWindow : Window, IDisposable
     private uint  cachedMaxTimestamp;
     private float cachedEarliestEffectiveMs;
 
+    // Cached custom trail color — repacked only when settings.TrailColor changes.
+    private Vector3 cachedTrailColorInput;
+    private uint    cachedCustomTrailColorU32;
+
     // Lead-in prepended to content during replay so that t=0 icons approach from the right
     // during the countdown window instead of being flush with the left edge.
     // 10 seconds covers the maximum /countdown value in FFXIV.
@@ -351,14 +355,18 @@ public class TimelineWindow : Window, IDisposable
         var iconSize = 24f * settings.IconScale;
         var oGcdSize = iconSize * OGcdSizeRatio;
 
-        var customTrailVec = settings.TrailColor;
-        var customTrailColor = ImGui.GetColorU32(new Vector4(customTrailVec.X, customTrailVec.Y, customTrailVec.Z, 0.6f));
+        var trailVec = settings.TrailColor;
+        if (trailVec != cachedTrailColorInput)
+        {
+            cachedTrailColorInput     = trailVec;
+            cachedCustomTrailColorU32 = ImGui.GetColorU32(new Vector4(trailVec.X, trailVec.Y, trailVec.Z, 0.6f));
+        }
         var dp = new DrawParams(
             scale,
             iconSize,
             oGcdSize,
             settings.UseCustomTrailColor,
-            customTrailColor,
+            cachedCustomTrailColorU32,
             ImGui.GetMousePos());
 
         // During replay use the full 10 s countdown lead-in.
