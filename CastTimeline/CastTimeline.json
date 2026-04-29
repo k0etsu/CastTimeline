@@ -4,6 +4,7 @@
   "Punchline": "A timeline viewer for FFXIV casts.",
   "Description": "Import cast logs and display them in a timeline view.",
   "ApplicableVersion": "any",
+  "DalamudAPILevel": 15,
   "RepoUrl": "https://github.com/k0etsu/CastTimeline",
   "Tags": [
     "timeline",
