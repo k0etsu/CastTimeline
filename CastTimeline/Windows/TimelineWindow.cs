@@ -5,7 +5,6 @@ using System.Numerics;
 using CastTimeline.Utilities;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Textures;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 
 namespace CastTimeline.Windows;
@@ -400,71 +399,69 @@ public class TimelineWindow : Window, IDisposable
             : ImGuiWindowFlags.HorizontalScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
 
         ImGui.SetNextWindowContentSize(new Vector2(totalWidth, 0));
-        using (var child = ImRaii.Child("TimelineView", new Vector2(availWidth, childHeight), false, childFlags))
+        ImGui.BeginChild("TimelineView", new Vector2(availWidth, childHeight), false, childFlags);
+
+        if (resetScroll) { ImGui.SetScrollX(0); resetScroll = false; }
+
+        if (isReplaying)
         {
-            if (!child.Success) return;
-
-            if (resetScroll) { ImGui.SetScrollX(0); resetScroll = false; }
-
-            if (isReplaying)
-            {
-                // Drive scroll so that the icon at currentFightTimeMs sits on the playhead
-                var nowContentX = (currentFightTimeMs + leadInMs) * scale / 10f;
-                ImGui.SetScrollX(Math.Max(0f, nowContentX - playheadOffset));
-            }
-            else if (ImGui.IsWindowHovered())
-            {
-                // Manual horizontal scroll via mouse wheel when not replaying
-                var wheel = ImGui.GetIO().MouseWheel;
-                if (wheel != 0)
-                    ImGui.SetScrollX(Math.Max(0f, ImGui.GetScrollX() - wheel * iconSize * 2f));
-            }
-
-            if (settings.ShowRuler)
-                DrawTimelineRuler(cachedMaxTimestamp, totalWidth, leadInMs, childPos.X, childPos.X + availWidth);
-
-            var dp = new DrawParams(
-                scale,
-                iconSize,
-                oGcdSize,
-                settings.UseCustomTrailColor,
-                cachedCustomTrailColorU32,
-                settings.ShowIconLabels,
-                ImGui.IsWindowHovered(),
-                ImGui.GetMousePos());
-
-            var drawList = ImGui.GetWindowDrawList();
-            var rowTop = ImGui.GetCursorScreenPos();
-
-            var scrollX = ImGui.GetScrollX();
-            // Buffer accounts for the largest icon size on either side plus a worst-case
-            // cast trail. Icons are at most iconSize wide; trails extend rightward by
-            // CastTime * scale * 100f which can reach several hundred pixels for long casts.
-            const float cullBuffer = 500f;
-            var cullLeft  = scrollX - cullBuffer;
-            var cullRight = scrollX + availWidth + cullBuffer;
-
-            foreach (var log in filteredLogs)
-            {
-                // Content-space X of the icon's left edge (same formula as DrawCastEvent).
-                var contentX = (log.Timestamp + leadInMs) * dp.Scale / 10f;
-                if (log.IsPrecast)
-                    contentX -= (float)(log.CastTime * dp.Scale * 100f);
-
-                // Right edge = icon left + full cast width (icon + trail).
-                var castWidthPx = log.IsInstant || log.CastTime <= 0
-                    ? dp.IconSize
-                    : (float)(log.CastTime * dp.Scale * 100f);
-                var rightEdge = contentX + castWidthPx;
-
-                if (rightEdge < cullLeft || contentX > cullRight)
-                    continue;
-
-                DrawCastEvent(log, drawList, rowTop, lanePadding, leadInMs, dp);
-            }
-
-            ImGui.Dummy(new Vector2(totalWidth, rowHeight));
+            // Drive scroll so that the icon at currentFightTimeMs sits on the playhead
+            var nowContentX = (currentFightTimeMs + leadInMs) * scale / 10f;
+            ImGui.SetScrollX(Math.Max(0f, nowContentX - playheadOffset));
         }
+        else if (ImGui.IsWindowHovered())
+        {
+            // Manual horizontal scroll via mouse wheel when not replaying
+            var wheel = ImGui.GetIO().MouseWheel;
+            if (wheel != 0)
+                ImGui.SetScrollX(Math.Max(0f, ImGui.GetScrollX() - wheel * iconSize * 2f));
+        }
+
+        if (settings.ShowRuler)
+            DrawTimelineRuler(cachedMaxTimestamp, totalWidth, leadInMs, childPos.X, childPos.X + availWidth);
+
+        var dp = new DrawParams(
+            scale,
+            iconSize,
+            oGcdSize,
+            settings.UseCustomTrailColor,
+            cachedCustomTrailColorU32,
+            settings.ShowIconLabels,
+            ImGui.IsWindowHovered(),
+            ImGui.GetMousePos());
+
+        var drawList = ImGui.GetWindowDrawList();
+        var rowTop = ImGui.GetCursorScreenPos();
+
+        var scrollX = ImGui.GetScrollX();
+        // Buffer accounts for the largest icon size on either side plus a worst-case
+        // cast trail. Icons are at most iconSize wide; trails extend rightward by
+        // CastTime * scale * 100f which can reach several hundred pixels for long casts.
+        const float cullBuffer = 500f;
+        var cullLeft  = scrollX - cullBuffer;
+        var cullRight = scrollX + availWidth + cullBuffer;
+
+        foreach (var log in filteredLogs)
+        {
+            // Content-space X of the icon's left edge (same formula as DrawCastEvent).
+            var contentX = (log.Timestamp + leadInMs) * dp.Scale / 10f;
+            if (log.IsPrecast)
+                contentX -= (float)(log.CastTime * dp.Scale * 100f);
+
+            // Right edge = icon left + full cast width (icon + trail).
+            var castWidthPx = log.IsInstant || log.CastTime <= 0
+                ? dp.IconSize
+                : (float)(log.CastTime * dp.Scale * 100f);
+            var rightEdge = contentX + castWidthPx;
+
+            if (rightEdge < cullLeft || contentX > cullRight)
+                continue;
+
+            DrawCastEvent(log, drawList, rowTop, lanePadding, leadInMs, dp);
+        }
+
+        ImGui.Dummy(new Vector2(totalWidth, rowHeight));
+        ImGui.EndChild();
 
         var parentDrawList = ImGui.GetWindowDrawList();
 
